@@ -194,6 +194,177 @@ document.documentElement.dir = direction; // 'rtl' or 'ltr'
 document.body.classList.add('rtl'); // or 'ltr'
 ```
 
+## RTL Language Support (Layout & Direction)
+
+Right-to-left support is implemented end-to-end: the `<html>` element gets the
+correct `dir` attribute, Tailwind `rtl:` variants are enabled, and layout
+primitives (`RtlContainer`, `RtlAwareIcon`) mirror direction-sensitive UI.
+
+### Supported RTL locales
+
+| Language | Code | Direction |
+|----------|------|-----------|
+| Arabic | `ar` | RTL ✅ |
+| Hebrew | `he` | RTL ✅ |
+| Persian | `fa` | RTL ✅ |
+| Urdu | `ur` | RTL ✅ |
+| English | `en` | LTR |
+| Spanish | `es` | LTR |
+
+### How `RTL_LOCALES` works
+
+Each package keeps a **single authoritative `RTL_LOCALES` constant** — no other
+code hard-codes `ar`/`he` checks:
+
+- `src/i18n/config.js` → `RTL_LOCALES` (CLI / Node)
+- `component-library/src/i18n/config.ts` → `RTL_LOCALES` (UI components)
+- `frontend/lib/i18n/rtl.ts` → `RTL_LOCALES` (Next.js frontend)
+
+`isRTL(locale)` and `getTextDirection(locale)` are derived from the constant, so
+adding a locale to `RTL_LOCALES` is all that is required to make it render RTL.
+
+```ts
+// frontend/lib/i18n/rtl.ts
+export const RTL_LOCALES = ['ar', 'he', 'fa', 'ur'] as const;
+export function getTextDirection(locale: string): 'ltr' | 'rtl' {
+  return RTL_LOCALES.includes(locale as any) ? 'rtl' : 'ltr';
+}
+```
+
+### Dynamic HTML direction
+
+`frontend/app/layout.tsx` reads the active locale from the `NEXT_LOCALE` cookie
+(never from browser heuristics) and renders:
+
+```tsx
+const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en';
+const dir = getTextDirection(locale);
+
+return <html lang={locale} dir={dir}>…</html>;
+```
+
+- `ar` / `he` → `<html dir="rtl">`
+- `en` / `es` / other LTR locales → `<html dir="ltr">`
+
+The locale store (`frontend/store/localeStore.ts`) persists the choice in the
+cookie and flips `document.documentElement.dir` immediately on change. The
+`LocaleProvider` syncs the server-rendered locale into the client store after
+hydration, so there are **no hydration mismatches**.
+
+### Tailwind `rtl:` variants
+
+`frontend/tailwind.config.a11y.js` registers an `rtl:` variant:
+
+```js
+plugin(({ addVariant }) => {
+  addVariant('rtl', '&:where([dir="rtl"], [dir="rtl"] *)');
+});
+```
+
+This enables direction-aware utilities such as `rtl:ml-4`, `rtl:text-right`,
+`rtl:flex-row-reverse`, `rtl:mr-0`, `rtl:pr-3`. Because the frontend ships its
+own compiled CSS (`app/globals.css`) rather than a Tailwind build step, the same
+logical utilities (`ms-*`, `me-*`, `ps-*`, `pe-*`, `text-start`, `text-end` and
+RTL `space-x-*` swaps) are also defined there, scoped to `[dir="rtl"]` so LTR
+layouts are unaffected.
+
+### `useTextDirection()`
+
+`frontend/hooks/useTextDirection.ts` returns the direction of the active locale:
+
+```tsx
+import { useTextDirection } from '@/hooks/useTextDirection';
+
+function Header() {
+  const direction = useTextDirection(); // 'ltr' | 'rtl'
+  return <div dir={direction}>…</div>;
+}
+```
+
+It reads the locale store and re-renders on locale changes.
+
+### Building RTL-aware components
+
+**`RtlContainer`** (`component-library/src/components/RtlContainer.tsx`) applies
+the text direction to its subtree and optionally swaps the flex row direction:
+
+```tsx
+import { RtlContainer } from '@soroban-scanner/ui-components';
+
+<RtlContainer dir={direction} className="app-shell">
+  <nav>…</nav>
+</RtlContainer>
+```
+
+It is direction-neutral by default (nothing is forced unless a prop asks for
+it), renders as any element (`as`), and exposes its direction to descendants
+via context.
+
+**`RtlAwareIcon`** (`component-library/src/components/RtlAwareIcon.tsx`)
+mirrors directional icons in RTL:
+
+```tsx
+import { RtlAwareIcon } from '@soroban-scanner/ui-components';
+
+{/* Arrow/chevron — mirrored in RTL so it points along the reading direction */}
+<RtlAwareIcon directional name="arrow-right" icon={<ArrowRight />} />
+
+{/* Direction-neutral icon — never mirrored */}
+<RtlAwareIcon name="search" icon={<Search />} />
+```
+
+### When directional icons should be mirrored
+
+Mirror **arrows, chevrons and navigation indicators** (e.g. "back", "next",
+"learn more", breadcrumb chevrons) so they point along the reading direction.
+Do **not** mirror:
+
+- direction-neutral icons (`search`, `settings`, `shield`, `plus`, …)
+- icons that already show both directions (`arrows-left-right`, `chevrons-left-right`)
+- chart/data indicators (`arrow-up-right` in a trend chart stays as drawn)
+
+`RtlAwareIcon` only mirrors when `directional` is set (or the `name` is a known
+directional icon); the default is no mirroring.
+
+### How to add a new RTL locale
+
+1. Add the locale code to `RTL_LOCALES` in all three places
+   (`src/i18n/config.js`, `component-library/src/i18n/config.ts`,
+   `frontend/lib/i18n/rtl.ts`).
+2. Add translation files under `locales/<code>/common.json` and register the
+   locale in the supported-languages lists.
+3. No other layout code needs to change — direction is derived from the
+   constant automatically.
+
+### Accessibility considerations
+
+- The `<html dir>` attribute is set from the active locale so screen readers
+  and browsers apply correct bidirectional text handling.
+- ARIA attributes that are **not** direction-dependent (`aria-label`,
+  `aria-labelledby`, `aria-describedby`, `aria-required`, `aria-invalid`,
+  `aria-live`, `aria-modal`) must **not** be swapped for RTL — only visual
+  layout and directional icons change. `A11yPrimitives.tsx` documents this and
+  uses logical CSS properties (`ms-*`, `start-*`) for spacing/positioning.
+- Use `getDirectionalValue(direction, ltrValue, rtlValue)` from
+  `A11yPrimitives.tsx` only when a value is genuinely direction-sensitive.
+
+### How to test RTL layouts
+
+- Unit tests: `RTL_LOCALES`, `isRTL`, `getTextDirection` (root, frontend and
+  component-library suites).
+- Hook test: `frontend/__tests__/useTextDirection.test.tsx`.
+- Layout test: `frontend/__tests__/layout-dir.test.tsx` asserts `<html dir>`
+  for `ar`, `he` and LTR locales.
+- Component tests: `component-library/src/components/RtlContainer.test.tsx`,
+  `RtlAwareIcon.test.tsx` and `frontend/__tests__/rtl-layout.test.tsx` verify
+  RTL/LTR layout behaviour and icon mirroring.
+- Tailwind/CSS tests: `frontend/__tests__/tailwind-rtl-variant.test.ts` and
+  `frontend/__tests__/rtl-css.test.ts` verify the `rtl:` variant and the
+  compiled RTL utilities.
+- Visual check: set the `NEXT_LOCALE` cookie to `ar` or `he` and confirm the
+  sidebar/navigation sits on the inline-end, form labels align to the start,
+  and directional arrows point correctly; confirm `en`/`es` are unchanged.
+
 ## Adding New Languages
 
 To add a new language:
@@ -216,11 +387,11 @@ supportedLngs: ['en', 'es', 'ar', 'fr']
 ```
 
 4. **Add RTL Support (if needed)**
-If the new language is RTL, add it to the RTL languages list:
+If the new language is RTL, add it to the `RTL_LOCALES` constant (see above):
 
 ```javascript
 // component-library/src/i18n/config.ts
-const rtlLanguages = ['ar', 'he', 'fa', 'ur', 'fr']; // if French was RTL
+export const RTL_LOCALES = ['ar', 'he', 'fa', 'ur', 'fr']; // if French was RTL
 ```
 
 ## Testing

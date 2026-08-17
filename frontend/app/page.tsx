@@ -15,11 +15,13 @@ import {
   HelpCircle,
   ShieldCheck,
 } from 'lucide-react';
+import { RtlContainer } from '@soroban-scanner/ui-components';
 
 // Help components
 import HelpPanel from '../components/help/HelpPanel';
 import GuidedTour from '../components/help/GuidedTour';
 import { useHelpStore } from '../lib/store/helpStore';
+import { useTextDirection } from '@/hooks/useTextDirection';
 
 // Types
 type View =
@@ -149,6 +151,7 @@ const DisputeForm = ({ submission, onSubmitDispute, onCancel }: any) => (
 );
 
 export default function App() {
+  const direction = useTextDirection();
   const [activeTab, setActiveTab] = useState<View>('scanner');
   const [selectedBounty, setSelectedBounty] = useState<Bounty | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
@@ -283,7 +286,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <RtlContainer dir={direction} className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -374,6 +377,6 @@ export default function App() {
       {activeTab === 'scanner' && <GuidedTour tourId="scan" />}
       {activeTab === 'report' && <GuidedTour tourId="vulnerability" />}
       {activeTab === 'time-travel' && <GuidedTour tourId="time-travel" />}
-    </div>
+    </RtlContainer>
   );
 }

@@ -13,6 +13,12 @@ const customJestConfig = {
   moduleNameMapper: {
     // Handle module aliases (if you configured them in tsconfig.json)
     '^@/(.*)$': '<rootDir>/$1',
+    // Monorepo: the component-library ships its own react copy; unify React
+    // so components imported from '@soroban-scanner/ui-components' share the
+    // test runner's React instance (avoids "Cannot read properties of null
+    // (reading 'useState')" from duplicate React copies).
+    '^react$': '<rootDir>/node_modules/react',
+    '^react-dom$': '<rootDir>/node_modules/react-dom',
   },
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   collectCoverageFrom: [

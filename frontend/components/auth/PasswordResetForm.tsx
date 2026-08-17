@@ -2,6 +2,7 @@
 
 import React, { useState, FormEvent } from 'react';
 import { Mail, ArrowLeft, AlertCircle, CheckCircle, Send } from 'lucide-react';
+import { RtlAwareIcon } from '@soroban-scanner/ui-components';
 
 interface PasswordResetFormData {
   email: string;
@@ -128,7 +129,12 @@ export default function PasswordResetForm({
           className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-optimized"
           disabled={isLoading}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          {/* Directional back arrow: points left in LTR, right (mirrored) in RTL */}
+          <RtlAwareIcon
+            directional
+            name="arrow-left"
+            icon={<ArrowLeft className="h-4 w-4 me-2" />}
+          />
           Back to Login
         </button>
 

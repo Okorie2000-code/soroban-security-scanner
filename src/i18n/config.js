@@ -5,6 +5,14 @@ const enCommon = require('../../locales/en/common.json');
 const esCommon = require('../../locales/es/common.json');
 const arCommon = require('../../locales/ar/common.json');
 
+/**
+ * Right-to-left (RTL) locales — the single authoritative source of text
+ * direction for this package. Add new RTL locales here; `isRTL` and
+ * `getTextDirection` derive from this list, so no other place needs to
+ * know which locales are RTL.
+ */
+const RTL_LOCALES = ['ar', 'he', 'fa', 'ur'];
+
 const i18nConfig = {
   // Supported languages
   supportedLngs: ['en', 'es', 'ar'],
@@ -76,8 +84,7 @@ function t(key, options = {}) {
  * Check if language is RTL
  */
 function isRTL(language) {
-  const rtlLanguages = ['ar', 'he', 'fa', 'ur'];
-  return rtlLanguages.includes(language);
+  return RTL_LOCALES.includes(language);
 }
 
 /**
@@ -129,6 +136,7 @@ module.exports = {
   initializeI18n,
   t,
   i18nConfig,
+  RTL_LOCALES,
   isRTL,
   getTextDirection,
   formatCurrency,

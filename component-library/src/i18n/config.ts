@@ -8,12 +8,34 @@ import enTranslations from '../../../locales/en/common.json';
 import esTranslations from '../../../locales/es/common.json';
 import arTranslations from '../../../locales/ar/common.json';
 
-// Supported languages
+/**
+ * Right-to-left (RTL) locales — the single authoritative source of text
+ * direction for this package. Arabic (`ar`) and Hebrew (`he`) resolve to
+ * RTL; add new RTL locales here and `supportedLanguages`, `isRTL` and
+ * `getTextDirection` pick them up automatically.
+ */
+export const RTL_LOCALES = ['ar', 'he', 'fa', 'ur'] as const;
+
+export type RtlLocale = (typeof RTL_LOCALES)[number];
+
+export type TextDirection = 'rtl' | 'ltr';
+
+// Utility functions
+export const isRTL = (language: string): boolean => {
+  return RTL_LOCALES.includes(language as RtlLocale);
+};
+
+export const getTextDirection = (language: string): TextDirection => {
+  return isRTL(language) ? 'rtl' : 'ltr';
+};
+
+// Supported languages. Direction is derived from `RTL_LOCALES` so the RTL
+// list stays the single source of truth.
 export const supportedLanguages = [
-  { code: 'en', name: 'English', dir: 'ltr' },
-  { code: 'es', name: 'Español', dir: 'ltr' },
-  { code: 'ar', name: 'العربية', dir: 'rtl' }
-];
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'ar', name: 'العربية' }
+].map(lang => ({ ...lang, dir: getTextDirection(lang.code) }));
 
 // Resources object
 const resources = {
@@ -87,16 +109,6 @@ i18n
   .init(i18nConfig);
 
 export default i18n;
-
-// Utility functions
-export const isRTL = (language: string): boolean => {
-  const lang = supportedLanguages.find(l => l.code === language);
-  return lang?.dir === 'rtl' || false;
-};
-
-export const getTextDirection = (language: string): 'rtl' | 'ltr' => {
-  return isRTL(language) ? 'rtl' : 'ltr';
-};
 
 export const formatCurrency = (
   amount: number, 

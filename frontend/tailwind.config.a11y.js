@@ -143,5 +143,13 @@ module.exports = {
         },
       });
     }),
+
+    // ── Plugin: `rtl:` variant (Right-to-Left support) ──────────────────────
+    // Enables direction-aware utilities such as `rtl:ml-4`, `rtl:text-right`,
+    // `rtl:flex-row-reverse`, `rtl:mr-0`, `rtl:pr-3`, etc. The selector matches
+    // any element inside a `[dir="rtl"]` subtree (e.g. <html dir="rtl">).
+    plugin(function ({ addVariant }) {
+      addVariant('rtl', '&:where([dir="rtl"], [dir="rtl"] *)');
+    }),
   ],
 };

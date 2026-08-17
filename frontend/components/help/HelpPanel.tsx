@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { RtlAwareIcon } from '@soroban-scanner/ui-components';
 import { HELP_CONTENT, HelpTopic } from '../../lib/help-content';
 
 interface HelpPanelProps {
@@ -47,8 +48,7 @@ const HelpPanel: React.FC<HelpPanelProps> = ({ topic, onClose }) => {
     >
       <div
         ref={panelRef}
-        className="w-full max-w-md h-full bg-white shadow-2xl p-0 overflow-y-auto transform transition-transform duration-300 ease-out translate-x-0"
-        style={{ animation: 'slideInRight 0.3s ease-out' }}
+        className="help-panel-drawer w-full max-w-md h-full bg-white shadow-2xl p-0 overflow-y-auto transform transition-transform duration-300 ease-out translate-x-0"
         onClick={e => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b px-6 py-4 flex items-center justify-between z-10">
@@ -111,20 +111,27 @@ const HelpPanel: React.FC<HelpPanelProps> = ({ topic, onClose }) => {
               className="group flex items-center justify-between p-4 bg-blue-600 rounded-2xl text-white font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
             >
               <span>Learn more in our Docs</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 transform group-hover:translate-x-1 transition-transform"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
+              {/* Directional arrow: points right in LTR, left (mirrored) in RTL */}
+              <RtlAwareIcon
+                directional
+                name="arrow-right"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 transform group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
+                  </svg>
+                }
+              />
             </a>
           </div>
         </div>
@@ -138,6 +145,22 @@ const HelpPanel: React.FC<HelpPanelProps> = ({ topic, onClose }) => {
           to {
             transform: translateX(0);
           }
+        }
+        @keyframes slideInLeft {
+          from {
+            transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        .help-panel-drawer {
+          animation: slideInRight 0.3s ease-out;
+        }
+        /* In RTL the drawer is anchored to the inline-end (left side), so it
+           slides in from the left instead of the right. */
+        [dir='rtl'] .help-panel-drawer {
+          animation: slideInLeft 0.3s ease-out;
         }
       `}</style>
     </div>

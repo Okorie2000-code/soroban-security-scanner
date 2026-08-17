@@ -4,6 +4,16 @@
 //
 // WCAG 2.1 AA-compliant primitive components for Soroban Security Scanner.
 // Each component documents which success criteria it satisfies.
+//
+// RTL (right-to-left) note:
+// The ARIA attributes used by these primitives (`aria-label`, `aria-labelledby`,
+// `aria-describedby`, `aria-required`, `aria-invalid`, `aria-live`, `aria-modal`,
+// `aria-hidden`) are NOT left/right direction-dependent — their values are
+// identifiers, states or text, never physical directions — so they must NOT be
+// swapped for RTL. Direction-sensitive behaviour is limited to CSS (logical
+// properties like `ms-*` / `start-*` below) and to visual content, which the
+// `dir="rtl"` attribute on <html> already handles. Use `getDirectionalValue`
+// when a value genuinely needs to differ per direction.
 
 import React, { useEffect, useRef } from 'react';
 import {
@@ -13,6 +23,17 @@ import {
   useSkipLink,
   useReducedMotion,
 } from '@/hooks/useAccessibility';
+
+// ── 0. Direction helper (RTL support) ────────────────────────────────────────
+/**
+ * Returns the direction-sensitive value for the active text direction.
+ * Use only for values whose meaning is genuinely physical (e.g. "left" /
+ * "right" words in an aria-label). Do NOT use it for direction-neutral ARIA
+ * attributes — those must stay identical in both directions.
+ */
+export function getDirectionalValue<T>(direction: 'ltr' | 'rtl', ltrValue: T, rtlValue: T): T {
+  return direction === 'rtl' ? rtlValue : ltrValue;
+}
 
 // ── 1. SkipLink (WCAG 2.4.1 – Bypass Blocks) ─────────────────────────────────
 /**
@@ -39,8 +60,9 @@ export function SkipLink({
       className={[
         // Visually hidden until focused
         'sr-only focus:not-sr-only',
-        // Visible styling when focused
-        'focus:fixed focus:top-4 focus:left-4 focus:z-[9999]',
+        // Visible styling when focused (start-4 = inline-start: left in LTR,
+        // right in RTL — logical, so the skip link lands on the reading side)
+        'focus:fixed focus:top-4 focus:start-4 focus:z-[9999]',
         'focus:rounded-lg focus:bg-cyan-400 focus:px-4 focus:py-2',
         'focus:text-sm focus:font-bold focus:text-gray-950',
         'focus:shadow-lg focus:outline-none',
@@ -216,7 +238,7 @@ export function AccessibleFormField({
         {required && (
           <>
             {/* Screen reader: "required" */}
-            <span aria-hidden="true" className="ml-1 text-cyan-400">
+            <span aria-hidden="true" className="ms-1 text-cyan-400">
               *
             </span>
             <span className="sr-only"> (required)</span>
@@ -345,7 +367,7 @@ export function StatusBadge({ severity, count }: { severity: Severity; count?: n
       <span aria-hidden="true">{cfg.icon}</span>
       {cfg.label}
       {count !== undefined && (
-        <span className="ml-0.5 rounded-full bg-black/30 px-1.5 py-px text-[10px]">{count}</span>
+        <span className="ms-0.5 rounded-full bg-black/30 px-1.5 py-px text-[10px]">{count}</span>
       )}
     </span>
   );
